@@ -20,236 +20,240 @@
       <div class="title-main">狭管效应 3D 风场模拟器</div>
       <div class="title-sub">山谷狭管 · 城市街谷</div>
     </div>
-
-    <div v-show="panelsVisible" class="control-panel">
-      <div class="panel-header">
-        <div>
-          <div class="panel-title">演示控制</div>
-          <div class="panel-en">CONTROL CENTER</div>
-        </div>
-        <div class="panel-dot"></div>
-      </div>
-
-      <div class="demo-buttons">
-        <button class="demo-btn start" :class="{ disabled: demoActive }" @click="startDemo">开始演示</button>
-        <button class="demo-btn stop" :class="{ disabled: !demoActive }" @click="stopDemo">结束演示</button>
-      </div>
-
-      <div class="mode-switch">
-        <button class="mode-btn" :class="{ active: sceneMode === 'mountain' }" @click="switchSceneMode('mountain')">山谷模式</button>
-        <button class="mode-btn" :class="{ active: sceneMode === 'city' }" @click="switchSceneMode('city')">城市模式</button>
-      </div>
-
-      <div class="demo-status">
-        <div class="status-line">
-          <span>当前场景</span>
-          <strong>{{ sceneMode === 'mountain' ? '山谷狭管' : '城市街谷' }}</strong>
-        </div>
-        <div class="status-line">
-          <span>演示状态</span>
-          <strong :class="{ running: demoActive }">
-            {{ demoActive ? '演示中' : '已暂停' }}
-          </strong>
-        </div>
-        <div class="status-line">
-          <span>当前阶段</span>
-          <strong>{{ currentStageText }}</strong>
-        </div>
-        <div class="status-line">
-          <span>狭口加速</span>
-          <strong>{{ speedFactorText }}</strong>
-        </div>
-        <div class="status-line">
-          <span>自动风速</span>
-          <strong>{{ autoWindSpeedText }}</strong>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="section-title">
-        {{ sceneMode === 'mountain' ? '山谷地形控制' : '城市街谷控制' }}
-      </div>
-
-      <div class="control-row">
-        <label>{{ sceneMode === 'mountain' ? '狭口宽度' : '街谷宽度' }}</label>
-        <input v-model.number="params.throatWidth" type="range" min="5" max="20" step="1" @input="scheduleAllRebuild" />
-        <span>{{ params.throatWidth }}</span>
-      </div>
-
-      <div class="control-row">
-        <label>{{ sceneMode === 'mountain' ? '山体高度' : '楼宇高度' }}</label>
-        <input v-model.number="params.mainHeight" type="range" min="22" max="52" step="1" @input="scheduleAllRebuild" />
-        <span>{{ params.mainHeight }}</span>
-      </div>
-
-      <div v-if="sceneMode === 'mountain'" class="control-row">
-        <label>谷底抬升</label>
-        <input v-model.number="params.valleyLift" type="range" min="2" max="10" step="0.5" @input="scheduleAllRebuild" />
-        <span>{{ params.valleyLift.toFixed(1) }}</span>
-      </div>
-
-      <div v-if="sceneMode === 'mountain'" class="control-row">
-        <label>山体粗糙</label>
-        <input v-model.number="params.terrainRoughness" type="range" min="0.4" max="1.8" step="0.1" @input="scheduleAllRebuild" />
-        <span>{{ params.terrainRoughness.toFixed(1) }}</span>
-      </div>
-
-      <div v-if="sceneMode === 'city'" class="control-row">
-        <label>楼宇密度</label>
-        <input v-model.number="params.buildingDensity" type="range" min="3" max="6" step="1" @input="scheduleAllRebuild" />
-        <span>{{ params.buildingDensity }}</span>
-      </div>
-
-      <div class="explain-card">
-        风速由狭口宽度自动决定：通道越窄，流线越集中，狭口处越快；穿过狭口后风速不会立即消失，而会在下游保持一段较强状态，再逐渐扩散衰减。鼠标悬停狭口、树木或楼宇可查看局部提示，点击可打开知识点说明。
-      </div>
-
-      <button class="reset-btn" @click="resetCamera">重置视角</button>
-    </div>
-
-    <div v-show="panelsVisible" class="knowledge-panel">
-      <div class="panel-header">
-        <div>
-          <div class="panel-title">狭管效应知识系统</div>
-          <div class="panel-en">NARROW CHANNEL EFFECT</div>
-        </div>
-        <div class="panel-dot"></div>
-      </div>
-
-      <div class="section-title">什么是狭管效应</div>
-
-      <div class="point">
-        <span>定义：</span>
-        狭管效应是指空气在通过狭窄通道时，由于可通过的横截面积减小，气流被迫收束，风速增强的现象。
-      </div>
-
-      <div class="point">
-        <span>本质：</span>
-        通道变窄后，气流线被压缩到更小空间中，同一方向上的空气运动更集中，因此会形成局地强风区。
-      </div>
-
-      <div class="point">
-        <span>山谷场景：</span>
-        山谷、峡谷、垭口、两山夹峙的风口等地，容易出现山谷型狭管效应。
-      </div>
-
-      <div class="point">
-        <span>城市场景：</span>
-        高楼之间的狭窄街道、楼宇间通道、建筑群风廊中，也会出现城市狭管效应。
-      </div>
-
-      <div class="point">
-        <span>关键条件：</span>
-        风向要大致顺着通道方向。如果风横穿山体或楼群，气流更多表现为绕流、爬升或紊流，不会形成清晰的狭管加速。
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="section-title">形成过程</div>
-
-      <div
-        v-for="item in processList"
-        :key="item.key"
-        class="process-item"
-        :class="{ active: currentStage === item.key }"
-        @click="setStage(item.key)"
-      >
-        <div class="process-index">{{ item.index }}</div>
-        <div>
-          <div class="process-name">{{ item.name }}</div>
-          <div class="process-desc">{{ item.desc }}</div>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="section-title">山谷与城市对比</div>
-
-      <div class="point">
-        <span>山谷模式：</span>
-        两侧山体形成自然通道，风沿谷地进入，狭口处流线收束，出谷后仍保持较强风速。
-      </div>
-
-      <div class="point">
-        <span>城市模式：</span>
-        高楼像两侧“人工山体”，街道像狭窄谷地。气流进入楼宇夹道后会向中心压缩，并在中部狭窄街谷处明显加速。
-      </div>
-
-      <div class="point">
-        <span>参照物：</span>
-        上游树木摇晃较弱；狭口或楼宇通道附近树木摇晃最明显；下游树木仍会保持较强摆动。
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="section-title">利与弊</div>
-
-      <div class="point">
-        <span>有利影响：</span>
-        有助于风能资源开发、山谷风理解、城市通风廊道设计、污染物扩散路径判断和热岛缓解。
-      </div>
-
-      <div class="point">
-        <span>不利影响：</span>
-        可能造成局地强风、扬尘、降温、交通风险、行人不适、农作物倒伏、广告牌和临时设施受损。
-      </div>
-
-      <div class="point">
-        <span>防灾意义：</span>
-        山区公路、桥梁、风口村镇、峡谷景区、高楼密集街区，都需要关注狭管效应带来的阵风增强。
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="section-title">科学判断</div>
-
-      <div class="judge-box">
-        本模型中，风从上游沿通道轴线进入，进入狭窄通道后流线收束、速度增强，穿过狭口后继续保持较强速度，再向下游扩散。风线被限制在安全通道内，不横穿山体，不穿越楼体，不垂直乱飞。
-      </div>
-    </div>
-
-    <!-- 底部只保留实时指标 -->
-    <div v-show="panelsVisible" class="bottom-panel metric-only">
-      <div class="metric-card full-metric">
-        <div class="metric-top">
+    <transition name="el-fade-in-linear">
+      <div v-show="panelsVisible" class="control-panel">
+        <div class="panel-header">
           <div>
-            <div class="metric-title">实时指标</div>
-            <div class="metric-sub">LIVE WIND INDEX</div>
+            <div class="panel-title">演示控制</div>
+            <div class="panel-en">CONTROL CENTER</div>
           </div>
-          <div class="metric-pulse" :class="{ strong: getMaxSpeedFactor() >= 3.4 }"></div>
+          <div class="panel-dot"></div>
         </div>
 
-        <div class="metric-grid">
-          <div class="metric-row">
-            <span>{{ sceneMode === 'mountain' ? '最窄谷口' : '街谷宽度' }}</span>
-            <strong>{{ params.throatWidth }} m</strong>
+        <div class="demo-buttons">
+          <button class="demo-btn start" :class="{ disabled: demoActive }" @click="startDemo">开始演示</button>
+          <button class="demo-btn stop" :class="{ disabled: !demoActive }" @click="stopDemo">结束演示</button>
+        </div>
+
+        <div class="mode-switch">
+          <button class="mode-btn" :class="{ active: sceneMode === 'mountain' }" @click="switchSceneMode('mountain')">山谷模式</button>
+          <button class="mode-btn" :class="{ active: sceneMode === 'city' }" @click="switchSceneMode('city')">城市模式</button>
+        </div>
+
+        <div class="demo-status">
+          <div class="status-line">
+            <span>当前场景</span>
+            <strong>{{ sceneMode === 'mountain' ? '山谷狭管' : '城市街谷' }}</strong>
           </div>
-          <div class="metric-row">
-            <span>峰值加速</span>
-            <strong class="highlight">{{ speedFactorText }}</strong>
+          <div class="status-line">
+            <span>演示状态</span>
+            <strong :class="{ running: demoActive }">
+              {{ demoActive ? '演示中' : '已暂停' }}
+            </strong>
           </div>
-          <div class="metric-row">
-            <span>自动风速</span>
-            <strong class="highlight">{{ autoWindSpeedText }}</strong>
-          </div>
-          <div class="metric-row">
-            <span>参照物响应</span>
-            <strong>{{ demoActive ? '树木摇晃中' : '静止观察' }}</strong>
-          </div>
-          <div class="metric-row">
+          <div class="status-line">
             <span>当前阶段</span>
             <strong>{{ currentStageText }}</strong>
           </div>
-          <div class="metric-row">
-            <span>风线状态</span>
-            <strong>{{ demoActive ? '动态流动' : '暂停显示' }}</strong>
+          <div class="status-line">
+            <span>狭口加速</span>
+            <strong>{{ speedFactorText }}</strong>
+          </div>
+          <div class="status-line">
+            <span>自动风速</span>
+            <strong>{{ autoWindSpeedText }}</strong>
           </div>
         </div>
 
-        <canvas ref="speedCanvasRef" class="speed-canvas"></canvas>
+        <div class="divider"></div>
+
+        <div class="section-title">
+          {{ sceneMode === 'mountain' ? '山谷地形控制' : '城市街谷控制' }}
+        </div>
+
+        <div class="control-row">
+          <label>{{ sceneMode === 'mountain' ? '狭口宽度' : '街谷宽度' }}</label>
+          <input v-model.number="params.throatWidth" type="range" min="5" max="20" step="1" @input="scheduleAllRebuild" />
+          <span>{{ params.throatWidth }}</span>
+        </div>
+
+        <div class="control-row">
+          <label>{{ sceneMode === 'mountain' ? '山体高度' : '楼宇高度' }}</label>
+          <input v-model.number="params.mainHeight" type="range" min="22" max="52" step="1" @input="scheduleAllRebuild" />
+          <span>{{ params.mainHeight }}</span>
+        </div>
+
+        <div v-if="sceneMode === 'mountain'" class="control-row">
+          <label>谷底抬升</label>
+          <input v-model.number="params.valleyLift" type="range" min="2" max="10" step="0.5" @input="scheduleAllRebuild" />
+          <span>{{ params.valleyLift.toFixed(1) }}</span>
+        </div>
+
+        <div v-if="sceneMode === 'mountain'" class="control-row">
+          <label>山体粗糙</label>
+          <input v-model.number="params.terrainRoughness" type="range" min="0.4" max="1.8" step="0.1" @input="scheduleAllRebuild" />
+          <span>{{ params.terrainRoughness.toFixed(1) }}</span>
+        </div>
+
+        <div v-if="sceneMode === 'city'" class="control-row">
+          <label>楼宇密度</label>
+          <input v-model.number="params.buildingDensity" type="range" min="3" max="6" step="1" @input="scheduleAllRebuild" />
+          <span>{{ params.buildingDensity }}</span>
+        </div>
+
+        <div class="explain-card">
+          风速由狭口宽度自动决定：通道越窄，流线越集中，狭口处越快；穿过狭口后风速不会立即消失，而会在下游保持一段较强状态，再逐渐扩散衰减。鼠标悬停狭口、树木或楼宇可查看局部提示，点击可打开知识点说明。
+        </div>
+
+        <button class="reset-btn" @click="resetCamera">重置视角</button>
       </div>
-    </div>
+    </transition>
+    <transition name="el-fade-in-linear">
+      <div v-show="panelsVisible" class="knowledge-panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">狭管效应知识系统</div>
+            <div class="panel-en">NARROW CHANNEL EFFECT</div>
+          </div>
+          <div class="panel-dot"></div>
+        </div>
+
+        <div class="section-title">什么是狭管效应</div>
+
+        <div class="point">
+          <span>定义：</span>
+          狭管效应是指空气在通过狭窄通道时，由于可通过的横截面积减小，气流被迫收束，风速增强的现象。
+        </div>
+
+        <div class="point">
+          <span>本质：</span>
+          通道变窄后，气流线被压缩到更小空间中，同一方向上的空气运动更集中，因此会形成局地强风区。
+        </div>
+
+        <div class="point">
+          <span>山谷场景：</span>
+          山谷、峡谷、垭口、两山夹峙的风口等地，容易出现山谷型狭管效应。
+        </div>
+
+        <div class="point">
+          <span>城市场景：</span>
+          高楼之间的狭窄街道、楼宇间通道、建筑群风廊中，也会出现城市狭管效应。
+        </div>
+
+        <div class="point">
+          <span>关键条件：</span>
+          风向要大致顺着通道方向。如果风横穿山体或楼群，气流更多表现为绕流、爬升或紊流，不会形成清晰的狭管加速。
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-title">形成过程</div>
+
+        <div
+          v-for="item in processList"
+          :key="item.key"
+          class="process-item"
+          :class="{ active: currentStage === item.key }"
+          @click="setStage(item.key)"
+        >
+          <div class="process-index">{{ item.index }}</div>
+          <div>
+            <div class="process-name">{{ item.name }}</div>
+            <div class="process-desc">{{ item.desc }}</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-title">山谷与城市对比</div>
+
+        <div class="point">
+          <span>山谷模式：</span>
+          两侧山体形成自然通道，风沿谷地进入，狭口处流线收束，出谷后仍保持较强风速。
+        </div>
+
+        <div class="point">
+          <span>城市模式：</span>
+          高楼像两侧“人工山体”，街道像狭窄谷地。气流进入楼宇夹道后会向中心压缩，并在中部狭窄街谷处明显加速。
+        </div>
+
+        <div class="point">
+          <span>参照物：</span>
+          上游树木摇晃较弱；狭口或楼宇通道附近树木摇晃最明显；下游树木仍会保持较强摆动。
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-title">利与弊</div>
+
+        <div class="point">
+          <span>有利影响：</span>
+          有助于风能资源开发、山谷风理解、城市通风廊道设计、污染物扩散路径判断和热岛缓解。
+        </div>
+
+        <div class="point">
+          <span>不利影响：</span>
+          可能造成局地强风、扬尘、降温、交通风险、行人不适、农作物倒伏、广告牌和临时设施受损。
+        </div>
+
+        <div class="point">
+          <span>防灾意义：</span>
+          山区公路、桥梁、风口村镇、峡谷景区、高楼密集街区，都需要关注狭管效应带来的阵风增强。
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-title">科学判断</div>
+
+        <div class="judge-box">
+          本模型中，风从上游沿通道轴线进入，进入狭窄通道后流线收束、速度增强，穿过狭口后继续保持较强速度，再向下游扩散。风线被限制在安全通道内，不横穿山体，不穿越楼体，不垂直乱飞。
+        </div>
+      </div>
+    </transition>
+
+    <transition name="el-fade-in-linear">
+      <!-- 底部只保留实时指标 -->
+      <div v-show="panelsVisible" class="bottom-panel metric-only">
+        <div class="metric-card full-metric">
+          <div class="metric-top">
+            <div>
+              <div class="metric-title">实时指标</div>
+              <div class="metric-sub">LIVE WIND INDEX</div>
+            </div>
+            <div class="metric-pulse" :class="{ strong: getMaxSpeedFactor() >= 3.4 }"></div>
+          </div>
+
+          <div class="metric-grid">
+            <div class="metric-row">
+              <span>{{ sceneMode === 'mountain' ? '最窄谷口' : '街谷宽度' }}</span>
+              <strong>{{ params.throatWidth }} m</strong>
+            </div>
+            <div class="metric-row">
+              <span>峰值加速</span>
+              <strong class="highlight">{{ speedFactorText }}</strong>
+            </div>
+            <div class="metric-row">
+              <span>自动风速</span>
+              <strong class="highlight">{{ autoWindSpeedText }}</strong>
+            </div>
+            <div class="metric-row">
+              <span>参照物响应</span>
+              <strong>{{ demoActive ? '树木摇晃中' : '静止观察' }}</strong>
+            </div>
+            <div class="metric-row">
+              <span>当前阶段</span>
+              <strong>{{ currentStageText }}</strong>
+            </div>
+            <div class="metric-row">
+              <span>风线状态</span>
+              <strong>{{ demoActive ? '动态流动' : '暂停显示' }}</strong>
+            </div>
+          </div>
+
+          <canvas ref="speedCanvasRef" class="speed-canvas"></canvas>
+        </div>
+      </div>
+    </transition>
 
     <div v-if="hoverInfo.visible" class="hover-tip" :style="{ left: `${hoverInfo.x}px`, top: `${hoverInfo.y}px` }">
       <div class="hover-title">{{ hoverInfo.title }}</div>
